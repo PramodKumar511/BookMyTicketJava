@@ -1,7 +1,8 @@
-package com.javatechie.filter;
+package com.java.fsd.bmt.filter;
 
-import com.javatechie.config.UserInfoUserDetailsService;
-import com.javatechie.service.JwtService;
+import com.java.fsd.bmt.config.UserInfoUserDetailsService;
+import com.java.fsd.bmt.utils.JwtService;
+
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;

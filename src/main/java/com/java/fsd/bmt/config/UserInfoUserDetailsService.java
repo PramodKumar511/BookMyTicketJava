@@ -1,7 +1,8 @@
-package com.javatechie.config;
+package com.java.fsd.bmt.config;
 
-import com.javatechie.entity.UserInfo;
-import com.javatechie.repository.UserInfoRepository;
+import com.java.fsd.bmt.entity.UserInfo;
+import com.java.fsd.bmt.repository.UserInfoRepository;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -18,7 +19,7 @@ public class UserInfoUserDetailsService implements UserDetailsService {
 
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-        Optional<UserInfo> userInfo = repository.findByName(username);
+        Optional<UserInfo> userInfo = repository.findByEmailId(username);
         return userInfo.map(UserInfoUserDetails::new)
                 .orElseThrow(() -> new UsernameNotFoundException("user not found " + username));
 

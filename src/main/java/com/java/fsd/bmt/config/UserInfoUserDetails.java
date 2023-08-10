@@ -1,9 +1,10 @@
-package com.javatechie.config;
+package com.java.fsd.bmt.config;
 
-import com.javatechie.entity.UserInfo;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
+
+import com.java.fsd.bmt.entity.UserInfo;
 
 import java.util.Arrays;
 import java.util.Collection;
@@ -15,14 +16,18 @@ public class UserInfoUserDetails implements UserDetails {
 
     private String name;
     private String password;
+    private String firstName;
+    private int uid;
     private List<GrantedAuthority> authorities;
 
     public UserInfoUserDetails(UserInfo userInfo) {
-        name=userInfo.getName();
-        password=userInfo.getPassword();
-        authorities= Arrays.stream(userInfo.getRoles().split(","))
-                .map(SimpleGrantedAuthority::new)
-                .collect(Collectors.toList());
+        name=userInfo.getEmailId();
+        password=userInfo.getPwd();
+        firstName = userInfo.getFirstName();
+        uid = userInfo.getUid();
+//        authorities= Arrays.stream(userInfo.getRoles().split(","))
+//                .map(SimpleGrantedAuthority::new)
+//                .collect(Collectors.toList());
     }
 
     @Override
@@ -59,4 +64,20 @@ public class UserInfoUserDetails implements UserDetails {
     public boolean isEnabled() {
         return true;
     }
+
+	public String getFirstName() {
+		return firstName;
+	}
+
+	public void setFirstName(String firstName) {
+		this.firstName = firstName;
+	}
+
+	public int getUid() {
+		return uid;
+	}
+
+	public void setUid(int uid) {
+		this.uid = uid;
+	}
 }
