@@ -1,150 +1,86 @@
 package com.java.fsd.bmt.service;
 
-import java.sql.Timestamp;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
+
+import javax.sql.DataSource;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
-import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.jdbc.datasource.DataSourceUtils;
 import org.springframework.stereotype.Service;
 
-import com.java.fsd.bmt.config.UserInfoUserDetails;
-import com.java.fsd.bmt.customexception.BookMyTicketException;
-import com.java.fsd.bmt.entity.EventEntity;
-import com.java.fsd.bmt.entity.PurchaseOrderEntity;
-import com.java.fsd.bmt.entity.UserInfo;
-import com.java.fsd.bmt.model.AuthRequest;
-import com.java.fsd.bmt.repository.EventRepository;
-import com.java.fsd.bmt.repository.PurchaseRepository;
-import com.java.fsd.bmt.repository.UserInfoRepository;
-import com.java.fsd.bmt.request.PurchaseRequest;
-import com.java.fsd.bmt.utils.JwtService;
-
-import jakarta.transaction.Transactional;
+import com.java.fsd.bmt.customException.BookMyTicketException;
+import com.java.fsd.bmt.entity.UserEntity;
+import com.java.fsd.bmt.model.Login;
+import com.java.fsd.bmt.model.SignUp;
 
 @Service
-@Transactional
-public class BmtService {
+public class BMTService {
 
 	@Autowired
-	private UserInfoRepository userRepository;
+	DataSource dataSource;
 
-	@Autowired
-	private EventRepository eventRepository;
+	public UserEntity verifyUserCred(Login login) throws SQLException, BookMyTicketException {
 
-	@Autowired
-	private PurchaseRepository purchaseRepository;
+		String query = "select uid,emailId,pwd" + " from bmtuser WHERE emailId = '" + login.getEmailId()
+				+ "' AND pwd = '" + login.getPassword() + "'";
+		UserEntity user = new UserEntity();
+		try (Connection sqlConn = DataSourceUtils.getConnection(dataSource);
+				PreparedStatement pstmt = sqlConn.prepareStatement(query);
+				Statement creatStmt = sqlConn.createStatement();) {
 
-	@Autowired
-	private PasswordEncoder passwordEncoder;
+			ResultSet rs = pstmt.executeQuery();
+			while (rs.next()) {
+				user.setUid(Integer.parseInt(rs.getString("uid")));
+				user.setEmailId(rs.getString("emailId"));
+				user.setPwd(rs.getString("pwd"));
+			}
 
-	@Autowired
-	private AuthenticationManager authenticationManager;
-
-	@Autowired
-	private JwtService jwtService;
-
-	public List<EventEntity> getEventList() {
-
-		return eventRepository.findAll();
-	}
-
-//	public EventInfo getEvent(int id) {
-//		return eventList.stream().filter(product -> product.getEventId() == id).findAny()
-//				.orElseThrow(() -> new RuntimeException("product " + id + " not found"));
-//	}
-
-	public boolean addUser(UserInfo userInfo) {
-
-		try {
-			userInfo.setPwd(passwordEncoder.encode(userInfo.getPwd()));
-			userRepository.save(userInfo);
-			return true;
 		} catch (Exception e) {
-			e.printStackTrace();
-			throw e;
+
+			throw new BookMyTicketException("Unable to validate user");
 		}
 
+		return user;
 	}
-
-//	public String authenticateUser(AuthRequest authRequest) {
-//
-//		Authentication authentication = authenticationManager.authenticate(
-//				new UsernamePasswordAuthenticationToken(authRequest.getUserName(), authRequest.getPassword()));
-//
-//		UserInfoUserDetails userDetails = (UserInfoUserDetails) authentication.getPrincipal();
-//
-//		if (authentication.isAuthenticated()) {
-//			return jwtService.generateToken(authRequest.getUserName());
-//		} else {
-//			throw new UsernameNotFoundException("invalid user request !");
-//		}
-//	}
 
 	public boolean isUserExist(String emailId) throws BookMyTicketException {
 
-		Optional<UserInfo> optUserInfo = userRepository.findByEmailId(emailId);
+		String query = "select uid from dbo.bmtuser WHERE emailId = '" + emailId + "'";
 
-		return optUserInfo.isEmpty();
-
-	}
-
-	public PurchaseOrderEntity buyTickets(PurchaseRequest orderDetails) {
-
-		PurchaseOrderEntity poEntity = new PurchaseOrderEntity();
-		poEntity.setEmailId(orderDetails.getEmailId());
-		poEntity.setEventId(orderDetails.getEventId());
-
-		return purchaseRepository.save(poEntity);
-	}
-
-	public PurchaseOrderEntity initiatPurchase(String eventId, String emailId) {
-		PurchaseOrderEntity poe = new PurchaseOrderEntity();
-		poe.setEmailId(emailId);
-		poe.setEventId(eventId);
-		poe.setStatus("inprogress");
-		poe.setTimer(new Timestamp(System.currentTimeMillis()));
-		return purchaseRepository.save(poe);
-
-		// eventRepository.setTimeronEvent(eventId);
-	}
-
-	public Timestamp getExpiryTime(String eventId) {
-		Optional<EventEntity> optEventData = eventRepository.findById(Integer.parseInt(eventId));
-		if (optEventData.isPresent()) {
-			return optEventData.get().getTimer();
-		} else {
-			return null;
+		try (Connection sqlConn = DataSourceUtils.getConnection(dataSource);
+				PreparedStatement pstmt = sqlConn.prepareStatement(query);
+				Statement creatStmt = sqlConn.createStatement();) {
+			ResultSet rs = pstmt.executeQuery();
+			return rs.next();
+		} catch (Exception e) {
+			throw new BookMyTicketException("Unable to fetch user");
 		}
 	}
 
-	public int getFirstPersonInprogress(PurchaseRequest purchaseRequest) {
+	public boolean userSignUp(SignUp signUpDetails) throws BookMyTicketException {
 
-		List<PurchaseOrderEntity> poeList = purchaseRepository.findOrdersInprogress(purchaseRequest.getEventId());
-		PurchaseOrderEntity fetchedPOE = poeList.get(0);
-		if (fetchedPOE.getEmailId().equalsIgnoreCase(purchaseRequest.getEmailId())) {
-			fetchedPOE.setStatus("success");
-			purchaseRepository.save(fetchedPOE);
-			return fetchedPOE.getOrderId();
+		if (isUserExist(signUpDetails.getEmail())) {
+			return false;
 		} else {
-			return -1;
+
+			String saveQuery = "insert into dbo.bmtuser(emailId, pwd) values ('" + signUpDetails.getEmail() + "','"
+					+ signUpDetails.getPassword() + "')";
+
+			try (Connection sqlConn = DataSourceUtils.getConnection(dataSource);
+					PreparedStatement pstmtSave = sqlConn.prepareStatement(saveQuery);) {
+				pstmtSave.executeUpdate();
+				return true;
+			} catch (Exception e) {
+				e.printStackTrace();
+				throw new BookMyTicketException("Unable to save user");
+			}
 		}
 	}
 
-	public int cancelOrder(String orderId) {
-		Optional<PurchaseOrderEntity> fetchedPOEOpt = purchaseRepository.findById(Integer.parseInt(orderId));
-		if (fetchedPOEOpt.isPresent()) {
-			PurchaseOrderEntity poe = fetchedPOEOpt.get();
-			poe.setStatus("cancel");
-			purchaseRepository.save(poe);
-			return poe.getOrderId();
-		} else {
-			return 0;
-		}
-
-	}
 }

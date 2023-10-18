@@ -1,4 +1,4 @@
-package com.java.fsd.bmt.customexception;
+package com.java.fsd.bmt.customException;
 
 public class BookMyTicketException extends Exception {
 

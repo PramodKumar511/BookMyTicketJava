@@ -4,20 +4,16 @@ public class AuthResponse {
 
 	private String emailId;
 	private String accessToken;
-	private int uid;
-	private String firstname;
-	private String status;
+	private String uid;
 
 	public AuthResponse() {
 	}
 
-	public AuthResponse(String emailId, String accessToken, int uid, String firstName, String status) {
+	public AuthResponse(String emailId, String accessToken, String uid) {
 		super();
 		this.emailId = emailId;
 		this.accessToken = accessToken;
 		this.uid = uid;
-		this.firstname = firstName;
-		this.status = status;
 	}
 
 	public String getEmailId() {
@@ -36,28 +32,12 @@ public class AuthResponse {
 		this.accessToken = accessToken;
 	}
 
-	public int getUid() {
+	public String getUid() {
 		return uid;
 	}
 
-	public void setUid(int uid) {
+	public void setUid(String uid) {
 		this.uid = uid;
-	}
-
-	public String getFirstname() {
-		return firstname;
-	}
-
-	public void setFirstname(String firstname) {
-		this.firstname = firstname;
-	}
-
-	public String getStatus() {
-		return status;
-	}
-
-	public void setStatus(String status) {
-		this.status = status;
 	}
 
 }
